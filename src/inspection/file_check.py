@@ -8,7 +8,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = BASE_DIR / "output"
 
-EXTERNAL_INPUT_PATH = OUTPUT_DIR / "attack_detection_result.json"
+EXTERNAL_INPUT_PATH = OUTPUT_DIR / "attack_detection_result_latest.json"
 
 RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -26,6 +26,10 @@ APACHE_CONFIG_PATHS = [
     "/etc/apache2/sites-enabled/000-default.conf",
 ]
 
+PHP_CONFIG_PATHS = [
+    "/etc/php/7.4/apache2/php.ini",
+]
+
 CATEGORY = "A02:2025-Security Misconfiguration"
 
 CHECK_NAMES = [
@@ -34,6 +38,7 @@ CHECK_NAMES = [
     "X-Content-Type-Options",
     "Strict-Transport-Security",
     "Content-Security-Policy",
+    "HttpOnly Flag",
 ]
 
 DEFAULT_RISK = {
@@ -42,6 +47,7 @@ DEFAULT_RISK = {
     "X-Content-Type-Options": "Low",
     "Strict-Transport-Security": "Low",
     "Content-Security-Policy": "High",
+    "HttpOnly Flag": "Medium",
 }
 
 
@@ -97,6 +103,15 @@ def collect_config_contents(paths):
             configs[path] = content
 
     return configs
+
+
+def merge_configs(*config_groups):
+    merged = {}
+
+    for configs in config_groups:
+        merged.update(configs)
+
+    return merged
 
 
 def remove_comment_lines(content):
@@ -188,6 +203,9 @@ def normalize_check_name(check_name):
     if "content-security-policy" in name:
         return "Content-Security-Policy"
 
+    if "httponly" in name or "http only" in name:
+        return "HttpOnly Flag"
+
     return check_name
 
 
@@ -200,7 +218,7 @@ def normalize_status(status):
     if status in ["safe", "양호"]:
         return "safe"
 
-    if status in ["review_required", "검토필요", "검토 필요"]:
+    if status in ["review_required", "review required", "검토필요", "검토 필요"]:
         return "review_required"
 
     if status in ["n/a", "na", "not_applicable", "해당없음", "해당 없음"]:
@@ -240,7 +258,9 @@ def build_external_map(external_items):
             "external_result": item.get("external_result", "외부 탐지 결과 없음"),
             "internal_result": item.get("internal_result", ""),
             "status": normalize_status(item.get("status", "n/a")),
-            "risk_level": normalize_risk(item.get("risk_level", DEFAULT_RISK.get(normalized_name, "Low"))),
+            "risk_level": normalize_risk(
+                item.get("risk_level", DEFAULT_RISK.get(normalized_name, "Low"))
+            ),
             "evidence": item.get("evidence", "외부 근거 없음"),
             "recommendation": item.get("recommendation", ""),
         }
@@ -309,7 +329,10 @@ def merge_external_internal_result(
         check_name=check_name,
         external_status=external_item.get("status", "n/a"),
         internal_status=internal_status,
-        external_risk=external_item.get("risk_level", DEFAULT_RISK.get(check_name, "Low")),
+        external_risk=external_item.get(
+            "risk_level",
+            DEFAULT_RISK.get(check_name, "Low"),
+        ),
     )
 
     external_result = external_item.get("external_result", "외부 탐지 결과 없음")
@@ -498,11 +521,62 @@ def check_csp(apache_configs, external_item):
     )
 
 
+def check_http_only(all_configs, external_item):
+    check_name = "HttpOnly Flag"
+
+    matched = find_pattern(
+        all_configs,
+        r"(HttpOnly|session\.cookie_httponly\s*=\s*(1|On|on|true|True))",
+    )
+
+    vulnerable = find_pattern(
+        all_configs,
+        r"session\.cookie_httponly\s*=\s*(0|Off|off|false|False)",
+    )
+
+    if matched:
+        return merge_external_internal_result(
+            check_name,
+            external_item,
+            "safe",
+            "Apache/PHP 설정 파일에서 HttpOnly 관련 활성 설정이 확인됨",
+            format_matched_lines(matched),
+            "세션 쿠키 보호를 위한 HttpOnly 설정이 적용되어 있습니다.",
+            "PHP 또는 Apache 설정에서 HttpOnly 속성을 활성화해야 합니다.",
+            "내부 설정은 존재하나 외부 쿠키 응답에 HttpOnly가 누락된다면 애플리케이션 레벨 쿠키 생성 코드를 추가 점검해야 합니다.",
+        )
+
+    if vulnerable:
+        return merge_external_internal_result(
+            check_name,
+            external_item,
+            "vulnerable",
+            "PHP 설정 파일에서 HttpOnly 비활성 설정이 확인됨",
+            format_matched_lines(vulnerable),
+            "HttpOnly 설정이 정상으로 판단됩니다.",
+            "php.ini에서 session.cookie_httponly = 1로 변경하거나 애플리케이션 쿠키 생성 시 HttpOnly 속성을 추가해야 합니다.",
+            "외부 탐지 결과와 내부 설정이 불일치하므로 실제 세션 쿠키 생성 위치를 확인해야 합니다.",
+        )
+
+    return merge_external_internal_result(
+        check_name,
+        external_item,
+        "n/a",
+        "Apache/PHP 설정 파일에서 HttpOnly 설정을 확인하지 못함",
+        "HttpOnly 관련 활성 설정 없음",
+        "HttpOnly 설정이 정상으로 판단됩니다.",
+        "PHP 또는 Apache 설정에서 HttpOnly 속성을 활성화해야 합니다.",
+        "외부에서는 HttpOnly 누락이 탐지되었으나 내부 설정 파일에서는 확인되지 않았으므로 애플리케이션 코드의 쿠키 생성 로직을 점검해야 합니다.",
+    )
+
+
 def run_internal_inspection(external_json_path=EXTERNAL_INPUT_PATH):
     external_items = load_external_json(external_json_path)
     external_map = build_external_map(external_items)
 
     apache_configs = collect_config_contents(APACHE_CONFIG_PATHS)
+    php_configs = collect_config_contents(PHP_CONFIG_PATHS)
+    all_configs = merge_configs(apache_configs, php_configs)
 
     results = [
         check_server_tokens(
@@ -525,6 +599,10 @@ def run_internal_inspection(external_json_path=EXTERNAL_INPUT_PATH):
             apache_configs,
             get_external_item(external_map, "Content-Security-Policy"),
         ),
+        check_http_only(
+            all_configs,
+            get_external_item(external_map, "HttpOnly Flag"),
+        ),
     ]
 
     save_json(results, RAW_OUTPUT_PATH)
@@ -546,35 +624,33 @@ def get_dashboard_data(external_json_path=EXTERNAL_INPUT_PATH):
 def build_dashboard_data(results):
     summary = {
         "total": len(results),
-
         "vulnerable": {
             "count": 0,
-            "items": []
+            "items": [],
         },
         "safe": {
             "count": 0,
-            "items": []
+            "items": [],
         },
         "review_required": {
             "count": 0,
-            "items": []
+            "items": [],
         },
         "n/a": {
             "count": 0,
-            "items": []
+            "items": [],
         },
-
         "high": {
             "count": 0,
-            "items": []
+            "items": [],
         },
         "medium": {
             "count": 0,
-            "items": []
+            "items": [],
         },
         "low": {
             "count": 0,
-            "items": []
+            "items": [],
         },
     }
 
