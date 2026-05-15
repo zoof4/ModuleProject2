@@ -38,6 +38,7 @@ class ExternalScanner:
             self._check_x_content_type_options,   # 모듈 3: MIME 스니핑 방어 확인
             self._check_hsts,                     # 모듈 4: HTTPS 강제 설정 확인
             self._check_csp,                      # 모듈 5: 콘텐츠 실행 정책 확인
+            self._check_http_only,                # 모듈 6: HTTPOnly 쿠키 설정 확인
         ]
         
         # 각각의 진단 함수를 호출하여 Vulnerable(취약) 결과가 나온 항목만 수집
@@ -128,6 +129,26 @@ class ExternalScanner:
             }
         return None
 
+    def _check_http_only(self, headers):
+        # 진단 모듈 6: Set-Cookie 헤더의 HttpOnly 플래그 설정 확인
+        # 세션 쿠키가 자바스크립트로 탈취되는 것을 방지하는지 점검합니다.
+        set_cookie = headers.get("Set-Cookie")
+        
+        # 쿠키가 설정되어 있는데 HttpOnly가 없는 경우만 취약으로 판단
+        if set_cookie and "httponly" not in set_cookie.lower():
+            return {
+                "check_name": "HttpOnly Flag",
+                "category": self.category_2025,
+                "external_result": "HttpOnly Flag Missing",
+                "internal_result": "",
+                "status": "Vulnerable",
+                "risk_level": "Medium",
+                "evidence": "Set-Cookie 헤더에 HttpOnly 속성이 누락되어 XSS 공격 시 세션 탈취 위험이 있습니다.",
+                "recommendation": "서버 설정이나 애플리케이션 코드에서 쿠키 생성 시 HttpOnly 속성을 명시하세요."
+            }
+        return None
+
+        
 # 메인 실행부
 if __name__ == "__main__":
     # 1. 진단 대상 서버 주소 (맥북에 띄워둔 웹페이지 주소)
