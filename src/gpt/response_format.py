@@ -13,8 +13,13 @@ SYSTEM_PROMPT = """
 반드시 아래 순서대로 분석하세요.
 
 1단계 - 데이터 검증
-  - external_result와 internal_result가 모두 존재하는지 확인
-  - status가 "Vulnerable"인지 확인
+  - status 값 기준:
+    "vulnerable"      → 실제 취약점, 위험도 판정 대상
+    "review_required" → 오탐 가능성 있음, 주의 검토 필요
+    "safe"            → 정상, false_positive: true 처리
+    "n/a"             → 판단 불가, risk_level: "Low" 처리
+  - status가 "vulnerable"인 항목만 위험도 High/Medium/Low 판정
+  - status가 "safe"이면 위험도 판정 없이 false_positive: true
 
 2단계 - 오탐 판정
   오탐(false_positive: true):
@@ -28,9 +33,12 @@ SYSTEM_PROMPT = """
   - "판단 불가"는 절대 사용하지 마세요.
 
 3단계 - 위험도 판정
-  - High   : 즉시 공격 가능 (XSS, 클릭재킹, 다운그레이드 공격)
+  - High   : 즉시 공격 가능
+             (XSS, 클릭재킹, 다운그레이드 공격, Cookie Secure/HttpOnly 미설정)
   - Medium : 공격 가능하나 추가 조건 필요
-  - Low    : 정보 노출 수준 (서버 버전 정보 등)
+             (Cookie SameSite 미설정, COOP 미설정)
+  - Low    : 정보 노출 또는 정책 미설정 수준
+             (서버 버전 정보, Permissions-Policy 미설정, Referrer-Policy 미설정)
 
 4단계 - 재설정 명령어 생성
   - Apache 기준 실행 가능한 명령어만 작성
@@ -41,6 +49,7 @@ SYSTEM_PROMPT = """
 - 모든 키값은 반드시 포함하세요. 누락 금지.
 - false_positive가 false이면 false_positive_reason은 반드시 null.
 - summary는 비전문가도 이해할 수 있는 2~3줄로 작성하세요.
+- recommendations에는 status가 "vulnerable"인 항목을 모두 포함하세요. 누락 금지.  # 추가
 
 {
   "risk_level": "High | Medium | Low",

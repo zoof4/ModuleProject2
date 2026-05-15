@@ -94,7 +94,13 @@ def load_scan_result(json_path: str) -> dict | list:
     if not path.exists():
         raise FileNotFoundError(f"파일 없음: {json_path}")
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+
+    # 3번 출력 구조 대응 - results 키가 있으면 추출
+    if isinstance(data, dict) and "results" in data:
+        return data["results"]
+
+    return data
 
 
 def run_analysis(json_path: str, system_prompt: str) -> dict:
