@@ -1,5 +1,6 @@
 import requests
 import json
+import os
 from datetime import datetime
 
 class ExternalScanner:
@@ -129,12 +130,29 @@ class ExternalScanner:
 
 # 메인 실행부
 if __name__ == "__main__":
-    # 진단 대상 서버 주소 (개인이 설정한 IP와 포트에 맞게끔 수정 필요)
-    TARGET = "http://172.16.32.129:1018" #http://172.16.32.129:1018
+    # 1. 진단 대상 서버 주소 (맥북에 띄워둔 웹페이지 주소)
+    TARGET = "http://172.16.32.129:1018" 
     
-    # 스캐너 객체 생성 및 진단 실행
+    # 2. 스캔 실행
     scanner = ExternalScanner(TARGET)
     scan_data = scanner.run_scan()
     
-    # 진단 결과를 JSON 형식으로 출력
+    # 3. 화면 출력
+    print("--- 외부 스캔 완료 ---")
     print(json.dumps(scan_data, indent=4, ensure_ascii=False))
+
+    # 4. [핵심] 동준님 file_check.py 연동용 파일 저장
+    output_dir = "output"
+    output_file = "attack_detection_result.json"
+    output_path = os.path.join(output_dir, output_file)
+
+    # output 폴더가 없으면 생성
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"\n[INFO] {output_dir} 폴더를 생성했습니다.")
+
+    # JSON 저장 (file_check.py가 이 파일을 읽으러 옵니다)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(scan_data, f, indent=4, ensure_ascii=False)
+    
+    print(f"\n✅ [SAVE OK] 연동용 파일 저장 완료: {output_path}")

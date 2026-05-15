@@ -571,6 +571,7 @@ def build_dashboard_data(results):
 
 
 def save_json(data, path):
+    
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     with open(path, "w", encoding="utf-8") as file:
