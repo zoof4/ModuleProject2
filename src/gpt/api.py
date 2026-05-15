@@ -3,6 +3,7 @@ import json
 from openai import OpenAI
 from dotenv import load_dotenv
 from pathlib import Path
+from src.gpt.response_format import get_system_prompt, format_gpt_response
 
 load_dotenv()
 
@@ -15,7 +16,7 @@ def _call_gpt(messages: list) -> str:
     """GPT API 호출 후 content 문자열 반환"""
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        temperature=0.1,
+        temperature=0,
         response_format={"type": "json_object"},  # type: ignore
         messages=messages  # type: ignore
     )
@@ -56,10 +57,10 @@ def _validate_and_retry(messages: list) -> dict:
     return {"error": "GPT 응답 실패"}
 
 
-def analyze_scan_result(scan_result: dict, system_prompt: str) -> dict:
+def analyze_scan_result(scan_result: dict) -> dict:
     """단일 진단 결과 dict를 GPT에 전달하고 분석 결과를 반환합니다."""
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": get_system_prompt()},
         {
             "role": "user",
             "content": (
@@ -71,12 +72,10 @@ def analyze_scan_result(scan_result: dict, system_prompt: str) -> dict:
     return _validate_and_retry(messages)
 
 
-def analyze_multiple_results(
-    scan_results: list, system_prompt: str
-) -> dict:
+def analyze_multiple_results(scan_results: list) -> dict:
     """다중 진단 결과 리스트를 GPT에 전달하고 분석 결과를 반환합니다."""
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": get_system_prompt()},
         {
             "role": "user",
             "content": (
@@ -96,16 +95,15 @@ def load_scan_result(json_path: str) -> dict | list:
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # 3번 출력 구조 대응 - results 키가 있으면 추출
     if isinstance(data, dict) and "results" in data:
         return data["results"]
 
     return data
 
 
-def run_analysis(json_path: str, system_prompt: str) -> dict:
+def run_analysis(json_path: str) -> dict:
     """Streamlit 대시보드 연동용 통합 함수."""
     scan_result = load_scan_result(json_path)
     if isinstance(scan_result, list):
-        return analyze_multiple_results(scan_result, system_prompt)
-    return analyze_scan_result(scan_result, system_prompt)
+        return analyze_multiple_results(scan_result)
+    return analyze_scan_result(scan_result)
