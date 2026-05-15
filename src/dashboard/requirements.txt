@@ -1,3 +1,5 @@
 streamlit
 plotly
 pandas
+fpdf2
+kaleido

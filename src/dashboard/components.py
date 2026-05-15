@@ -40,11 +40,19 @@ def render_risk_chart(summary: dict):
         "개수": list(rc.values())
     })
     fig = px.pie(
-        df, names="등급", values="개수", hole=0.5,
+        df, names="등급", values="개수", hole=0.55,
         color="등급",
         color_discrete_map={"High": "#ef4444", "Medium": "#f97316", "Low": "#eab308"}
     )
-    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=280)
+    fig.update_layout(
+        margin=dict(t=0, b=0, l=0, r=0),
+        height=280,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#cccccc"),
+        legend=dict(font=dict(color="#aaaaaa")),
+    )
+    fig.update_traces(textfont_color="#ffffff")
     st.plotly_chart(fig, use_container_width=True)
 
 
