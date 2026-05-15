@@ -1,5 +1,6 @@
 import requests
 import json
+import os
 from datetime import datetime
 
 class ExternalScanner:
@@ -36,7 +37,8 @@ class ExternalScanner:
             self._check_x_frame_options,          # 모듈 2: 클릭재킹 방어 확인
             self._check_x_content_type_options,   # 모듈 3: MIME 스니핑 방어 확인
             self._check_hsts,                     # 모듈 4: HTTPS 강제 설정 확인
-            self._check_csp                       # 모듈 5: 콘텐츠 실행 정책 확인
+            self._check_csp,                      # 모듈 5: 콘텐츠 실행 정책 확인
+            self._check_http_only,                # 모듈 6: HTTPOnly 쿠키 설정 확인
         ]
         
         # 각각의 진단 함수를 호출하여 Vulnerable(취약) 결과가 나온 항목만 수집
@@ -54,7 +56,7 @@ class ExternalScanner:
         server_banner = headers.get("Server")
         if server_banner:
             return {
-                "check_name": "Server Banner Exposure",
+                "check_name": "ServerTokens",
                 "category": self.category_2025,
                 "external_result": f"Detected: {server_banner}",
                 "internal_result": "",  # 동준님이 설정 파일 확인 후 채울 공간
@@ -69,7 +71,7 @@ class ExternalScanner:
         #진단 모듈 2: 클릭재킹(Clickjacking) 공격 방어용 헤더 확인
         if "X-Frame-Options" not in headers:
             return {
-                "check_name": "Missing Security Header: X-Frame-Options",
+                "check_name": "X-Frame-Options",
                 "category": self.category_2025,
                 "external_result": "Header Not Found",
                 "internal_result": "",
@@ -100,7 +102,7 @@ class ExternalScanner:
         hsts = headers.get("Strict-Transport-Security")
         if not hsts:
             return {
-                "check_name": "Missing Security Header: Strict-Transport-Security",
+                "check_name": "Strict-Transport-Security",
                 "category": self.category_2025,
                 "external_result": "Header Not Found",
                 "internal_result": "",
@@ -116,7 +118,7 @@ class ExternalScanner:
         csp = headers.get("Content-Security-Policy")
         if not csp:
             return {
-                "check_name": "Missing Security Header: Content-Security-Policy",
+                "check_name": "Content-Security-Policy",
                 "category": self.category_2025,
                 "external_result": "Header Not Found",
                 "internal_result": "",
@@ -126,15 +128,49 @@ class ExternalScanner:
                 "recommendation": "서비스에 필요한 출처(Domain)만 허용하는 화이트리스트 기반의 CSP 정책을 수립하세요."
             }
         return None
-
+    def _check_http_only(self, headers):
+        # 진단 모듈 6: Set-Cookie 헤더의 HttpOnly 플래그 설정 확인
+        # 세션 쿠키가 자바스크립트로 탈취되는 것을 방지하는지 점검합니다.
+        set_cookie = headers.get("Set-Cookie")
+        
+        # 쿠키가 설정되어 있는데 HttpOnly가 없는 경우만 취약으로 판단
+        if set_cookie and "httponly" not in set_cookie.lower():
+            return {
+                "check_name": "HttpOnly Flag",
+                "category": self.category_2025,
+                "external_result": "HttpOnly Flag Missing",
+                "internal_result": "",
+                "status": "Vulnerable",
+                "risk_level": "Medium",
+                "evidence": "Set-Cookie 헤더에 HttpOnly 속성이 누락되어 XSS 공격 시 세션 탈취 위험이 있습니다.",
+                "recommendation": "서버 설정이나 애플리케이션 코드에서 쿠키 생성 시 HttpOnly 속성을 명시하세요."
+            }
+        return None
 # 메인 실행부
 if __name__ == "__main__":
-    # 진단 대상 서버 주소 (개인이 설정한 IP와 포트에 맞게끔 수정 필요)
-    TARGET = "http://172.16.32.129:1018" #http://172.16.32.129:1018
+    # 1. 진단 대상 서버 주소 (맥북에 띄워둔 웹페이지 주소)
+    TARGET = "http://172.16.32.129:1018" 
     
-    # 스캐너 객체 생성 및 진단 실행
+    # 2. 스캔 실행
     scanner = ExternalScanner(TARGET)
     scan_data = scanner.run_scan()
     
-    # 진단 결과를 JSON 형식으로 출력
+    # 3. 화면 출력
+    print("--- 외부 스캔 완료 ---")
     print(json.dumps(scan_data, indent=4, ensure_ascii=False))
+
+    # 4. [핵심] 동준님 file_check.py 연동용 파일 저장
+    output_dir = "output"
+    output_file = "attack_detection_result.json"
+    output_path = os.path.join(output_dir, output_file)
+
+    # output 폴더가 없으면 생성
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"\n[INFO] {output_dir} 폴더를 생성했습니다.")
+
+    # JSON 저장 (file_check.py가 이 파일을 읽으러 옵니다)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(scan_data, f, indent=4, ensure_ascii=False)
+    
+    print(f"\n✅ [SAVE OK] 연동용 파일 저장 완료: {output_path}")
