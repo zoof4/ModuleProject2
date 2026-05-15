@@ -2,6 +2,7 @@
 # streamlit run app.py 로 실행
 
 import streamlit as st
+import os
 from data_loader import load_data, get_summary
 from components import (
     render_summary,
@@ -127,15 +128,39 @@ with col_btn:
 
 if scan_clicked:
     if url_input:
-        st.info(f"🔗 `{url_input}` — 진단 스크립트 연동 후 동작 예정")
+        json_path = "output/internal_inspection_result_latest.json"
+        if os.path.exists(json_path):
+            with st.spinner("GPT 분석 중..."):
+                from src.gpt.api import run_analysis
+                from src.gpt.response_format import format_gpt_response
+                from data_loader import convert_backend_json
+                import json as _json
+
+                raw = run_analysis(json_path)
+
+                with open(json_path, encoding="utf-8") as f:
+                    scan_data = _json.load(f)
+                target_info = scan_data[0]  # 리스트 구조
+
+                formatted = format_gpt_response(raw, target_info)
+                converted = convert_backend_json(formatted)
+                converted["scan_target"] = url_input
+                st.session_state["data"] = converted
+        else:
+            st.warning("output/internal_inspection_result_latest.json 파일이 없습니다. 진단 스크립트를 먼저 실행해주세요.")
     else:
         st.warning("URL을 입력해주세요.")
 
 st.divider()
 
-data = load_data()
+# 스캔 결과 있으면 사용, 없으면 더미 데이터
+data = st.session_state.get("data") or load_data()
 summary = get_summary(data)
 headers = data["headers"]
+
+# GPT 요약 있으면 표시
+if data.get("gpt_summary"):
+    st.info(f"🤖 GPT 요약: {data['gpt_summary']}")
 
 render_summary(summary)
 st.divider()
