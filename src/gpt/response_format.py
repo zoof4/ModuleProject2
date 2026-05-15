@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-# 1. AI 분석 품질을 결정하는 강력한 프롬프트
 SYSTEM_PROMPT = """
 당신은 '보안 전문 컨설턴트'입니다. 입력된 단순 진단 데이터를 바탕으로 전문 보고서를 작성하세요.
 
@@ -12,21 +11,22 @@ SYSTEM_PROMPT = """
 3. 공격 시나리오: 이 취약점을 방치했을 때 발생할 수 있는 실제 해킹 사례(클릭재킹, XSS 등)를 'issue'에 상세히 설명하십시오.
 4. 모든 응답은 '한국어'로 작성하십시오.
 
-[출력 형식 (JSON 전용)]
+[출력 형식]
 {
   "risk_level": "High | Medium | Low",
+  "summary": "GPT가 작성한 전체 요약",
   "false_positive": false,
   "false_positive_reason": null,
-  "summary": "취약점의 비즈니스 영향 분석 및 요약 (2~3줄)",
   "recommendations": [
     {
-      "check_name": "진단 항목",
-      "issue": "공격 시나리오 기반의 위험성 설명",
-      "remediation": "서버별 설정 코드 및 재시작 절차"
+      "check_name": "진단 항목명",
+      "issue": "공격 시나리오 기반의 상세 설명",
+      "remediation": "서버별 설정 코드 및 해결 방법"
     }
-  ]
+  ],
+  "recommendation_count": 1
 }
-"""
+
 
 def get_system_prompt():
     return SYSTEM_PROMPT
