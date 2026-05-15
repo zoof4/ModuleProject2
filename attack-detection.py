@@ -37,7 +37,7 @@ class ExternalScanner:
             self._check_x_frame_options,          # 모듈 2: 클릭재킹 방어 확인
             self._check_x_content_type_options,   # 모듈 3: MIME 스니핑 방어 확인
             self._check_hsts,                     # 모듈 4: HTTPS 강제 설정 확인
-            self._check_csp                       # 모듈 5: 콘텐츠 실행 정책 확인
+            self._check_csp,                      # 모듈 5: 콘텐츠 실행 정책 확인
         ]
         
         # 각각의 진단 함수를 호출하여 Vulnerable(취약) 결과가 나온 항목만 수집
@@ -55,7 +55,7 @@ class ExternalScanner:
         server_banner = headers.get("Server")
         if server_banner:
             return {
-                "check_name": "Server Banner Exposure",
+                "check_name": "ServerTokens",
                 "category": self.category_2025,
                 "external_result": f"Detected: {server_banner}",
                 "internal_result": "",  # 동준님이 설정 파일 확인 후 채울 공간
@@ -70,7 +70,7 @@ class ExternalScanner:
         #진단 모듈 2: 클릭재킹(Clickjacking) 공격 방어용 헤더 확인
         if "X-Frame-Options" not in headers:
             return {
-                "check_name": "Missing Security Header: X-Frame-Options",
+                "check_name": "X-Frame-Options",
                 "category": self.category_2025,
                 "external_result": "Header Not Found",
                 "internal_result": "",
@@ -101,7 +101,7 @@ class ExternalScanner:
         hsts = headers.get("Strict-Transport-Security")
         if not hsts:
             return {
-                "check_name": "Missing Security Header: Strict-Transport-Security",
+                "check_name": "Strict-Transport-Security",
                 "category": self.category_2025,
                 "external_result": "Header Not Found",
                 "internal_result": "",
@@ -117,7 +117,7 @@ class ExternalScanner:
         csp = headers.get("Content-Security-Policy")
         if not csp:
             return {
-                "check_name": "Missing Security Header: Content-Security-Policy",
+                "check_name": "Content-Security-Policy",
                 "category": self.category_2025,
                 "external_result": "Header Not Found",
                 "internal_result": "",
