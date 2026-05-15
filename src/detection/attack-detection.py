@@ -142,17 +142,34 @@ if __name__ == "__main__":
     print(json.dumps(scan_data, indent=4, ensure_ascii=False))
 
     # 4. [핵심] 동준님 file_check.py 연동용 파일 저장
-    output_dir = "output"
-    output_file = "attack_detection_result.json"
-    output_path = os.path.join(output_dir, output_file)
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    OUTPUT_DIR = os.path.join(BASE_DIR, "..", "..", "output")
+    OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
+
+    # 실행 시간 기준 타임스탬프
+    RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # 날짜별 저장 파일
+    timestamp_output_file = f"attack_detection_result_{RUN_TIMESTAMP}.json"
+
+    # 최신 연동 파일
+    latest_output_file = "attack_detection_result_latest.json"
+
+    timestamp_output_path = os.path.join(OUTPUT_DIR, timestamp_output_file)
+    latest_output_path = os.path.join(OUTPUT_DIR, latest_output_file)
 
     # output 폴더가 없으면 생성
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"\n[INFO] {output_dir} 폴더를 생성했습니다.")
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+        print(f"\n[INFO] output 폴더를 생성했습니다: {OUTPUT_DIR}")
 
-    # JSON 저장 (file_check.py가 이 파일을 읽으러 옵니다)
-    with open(output_path, "w", encoding="utf-8") as f:
+    # 날짜별 JSON 저장
+    with open(timestamp_output_path, "w", encoding="utf-8") as f:
         json.dump(scan_data, f, indent=4, ensure_ascii=False)
-    
-    print(f"\n✅ [SAVE OK] 연동용 파일 저장 완료: {output_path}")
+
+    # latest JSON 저장 (내부 점검 모듈 연동용)
+    with open(latest_output_path, "w", encoding="utf-8") as f:
+        json.dump(scan_data, f, indent=4, ensure_ascii=False)
+
+    print(f"\n✅ [SAVE OK] 날짜별 저장 완료: {timestamp_output_path}")
+    print(f"✅ [SAVE OK] 최신 연동 파일 저장 완료: {latest_output_path}")
