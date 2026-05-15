@@ -1,0 +1,8 @@
+{
+    "check_name": "X-Frame-Options Header",
+    "category": "OWASP A05",
+    "status": "Fail",
+    "risk_level": "High",
+    "evidence": "X-Frame-Options header missing",
+    "recommendation": "Set to SAMEORIGIN"
+}
