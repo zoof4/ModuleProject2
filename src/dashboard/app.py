@@ -147,12 +147,11 @@ if scan_clicked:
             try:
                 # 1. 내 웹 어택 탐지 파일 실행
                 st.toast("⏳ 1단계: 내 보안 진단 스크립트 실행 중...")
-                subprocess.run(["sudo", "python3", DETECT_SCRIPT, url_input], check=True)
+                subprocess.run(["python", DETECT_SCRIPT, url_input], check=True)
                 
                 # 2. 동준님 점검 파일 실행
                 st.toast("⏳ 2단계: 동준님 설정 점검 스크립트 실행 중...")
-                subprocess.run(["sudo", "python3", FILE_CHECK_SCRIPT, url_input], check=True)
-                time.sleep(1)  # 간단한 지연 추가
+                subprocess.run(["python", FILE_CHECK_SCRIPT, url_input], check=True)
                 
                 st.toast("✅ 스크립트 점검 완료! GPT 분석으로 진입합니다.")
             except subprocess.CalledProcessError:
@@ -174,7 +173,7 @@ if scan_clicked:
                 target_info = scan_data[0]  # 리스트 구조
 
                 formatted = format_gpt_response(raw, target_info)
-                converted = convert_backend_json(formatted)
+                converted = convert_backend_json(formatted, scan_data)
                 converted["scan_target"] = url_input
                 st.session_state["data"] = converted
         else:

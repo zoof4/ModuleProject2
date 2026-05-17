@@ -15,7 +15,7 @@ REQUIRED_KEYS = {"risk_level", "false_positive", "summary", "recommendations"}
 def _call_gpt(messages: list) -> str:
     """GPT API 호출 후 content 문자열 반환"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.2-pro",
         temperature=0,
         response_format={"type": "json_object"},  # type: ignore
         messages=messages  # type: ignore

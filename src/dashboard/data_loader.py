@@ -6,7 +6,8 @@ import os
 from dummy_data import get_dummy_data
 
 
-def convert_backend_json(raw: dict) -> dict:
+# [수정] scan_data 파라미터 추가 - 개별 위험도/상태 원본 JSON에서 가져오기
+def convert_backend_json(raw: dict, scan_data: list = None) -> dict:
     """
     백엔드 JSON 구조 → 대시보드 구조로 변환
     백엔드: {status, timestamp, check_item, category, analysis: {risk_level, recommendations[{check_name, issue, remediation}]}}
@@ -15,17 +16,55 @@ def convert_backend_json(raw: dict) -> dict:
     analysis = raw.get("analysis", {})
     recommendations = analysis.get("recommendations", [])
 
-    headers = []
+    # GPT 응답에서 check_name → issue, remediation 매핑
+    gpt_map = {}
     for rec in recommendations:
-        headers.append({
-            "name": rec.get("check_name", raw.get("check_item", "-")),
-            "alias": rec.get("check_name", "-"),
-            "status": "missing",  # 백엔드에서 status 미제공 시 기본값
-            "risk": analysis.get("risk_level", "Low"),
-            "description": rec.get("issue", "-"),
-            "false_positive": analysis.get("false_positive", False),
-            "recommendation": rec.get("remediation", "-"),
-        })
+        name = rec.get("check_name", "")
+        gpt_map[name] = {
+            "issue": rec.get("issue", "-"),
+            "remediation": rec.get("remediation", "-")
+        }
+
+    headers = []
+    if scan_data:
+        # [수정] 상태와 위험도는 원본 JSON에서 직접 가져옴 (GPT 변경 방지)
+        for item in scan_data:
+            name = item.get("check_name", "-")
+            external = item.get("external_result", "")
+
+            # 수정 - JSON status 값 normalize해서 사용
+            status_raw = item.get("status", "n/a").lower().strip()
+            if status_raw in ["vulnerable", "취약"]:
+                status = "vulnerable"
+            elif status_raw in ["safe", "양호"]:
+                status = "safe"
+            elif status_raw in ["review_required", "검토필요", "검토 필요"]:
+                status = "review_required"
+            else:
+                status = "n/a"
+
+            # check_name 부분 일치로 GPT 설명 매핑
+            gpt_data = gpt_map.get(name, {})
+            if not gpt_data:
+                for key, val in gpt_map.items():
+                    if key in name or name in key:
+                        gpt_data = val
+                        break
+
+            headers.append({
+                "name": name,
+                "alias": name,
+                "status": status,
+                # [수정] 개별 항목 위험도를 원본 JSON에서 가져옴
+                "risk": item.get("risk_level", "Low"),
+                "description": gpt_data.get(
+                    "issue", item.get("evidence", "-")
+                ),
+                "false_positive": analysis.get("false_positive", False),
+                "recommendation": gpt_data.get(
+                    "remediation", item.get("recommendation", "-")
+                ),
+            })
 
     return {
         "scan_target": "-",  # 백엔드 JSON에 URL 없음, app.py에서 덮어씀

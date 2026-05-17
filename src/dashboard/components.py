@@ -13,9 +13,10 @@ RISK_COLOR = {
 }
 
 STATUS_LABEL = {
-    "missing": "❌ 누락",
-    "exposed": "⚠️ 노출",
-    "ok":      "✅ 정상",
+    "vulnerable":      "🔴 취약",
+    "safe":            "🟢 양호",
+    "review_required": "🟡 검토필요",
+    "n/a":             "⚫ 해당없음",
 }
 
 
@@ -76,7 +77,7 @@ def render_header_table(headers: list):
         return f"color: {color}; font-weight: bold"
 
     st.dataframe(
-        df.style.applymap(color_risk, subset=["위험도"]),
+        df.style.map(color_risk, subset=["위험도"]),
         use_container_width=True,
         hide_index=True,
     )
@@ -97,6 +98,6 @@ def render_detail_cards(headers: list):
             st.markdown(f"**위험도:** <span style='color:{color}'>**{h['risk']}**</span>", unsafe_allow_html=True)
             st.markdown(f"**위협 설명:** {h['description']}")
             st.markdown("**권장 조치:**")
-            st.code(h["recommendation"], language="nginx")
+            st.markdown(h["recommendation"])
             if h.get("false_positive"):
                 st.warning("⚠️ 오탐 가능성 있음 - GPT 판단 결과를 확인하세요")
