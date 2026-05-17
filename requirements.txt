@@ -1,6 +1,6 @@
 streamlit
 plotly
-pandas
+pandas==2.1.4
 fpdf2
 kaleido
 requests
