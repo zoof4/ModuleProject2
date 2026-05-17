@@ -2,6 +2,7 @@ import requests
 import json
 import os
 from datetime import datetime
+import requests
 
 class ExternalScanner:
     
@@ -130,23 +131,63 @@ class ExternalScanner:
         return None
 
     def _check_http_only(self, headers):
-        # 진단 모듈 6: Set-Cookie 헤더의 HttpOnly 플래그 설정 확인
-        # 세션 쿠키가 자바스크립트로 탈취되는 것을 방지하는지 점검합니다.
-        set_cookie = headers.get("Set-Cookie")
-        
-        # 쿠키가 설정되어 있는데 HttpOnly가 없는 경우만 취약으로 판단
-        if set_cookie and "httponly" not in set_cookie.lower():
+
+        login_url = f"{self.target_url}/login.php"
+
+        session = requests.Session()
+
+        login_data = {
+            "id": "test",
+            "pw": "test1234"
+        }
+
+        try:
+            response = session.post(
+                login_url,
+                data=login_data,
+                allow_redirects=False,
+                timeout=10
+            )
+
+            set_cookie = response.headers.get("Set-Cookie")
+
+            if not set_cookie:
+                return {
+                    "check_name": "HttpOnly Flag",
+                    "category": self.category_2025,
+                    "external_result": "Set-Cookie Header Not Found After Login",
+                    "internal_result": "",
+                    "status": "n/a",
+                    "risk_level": "Low",
+                    "evidence": "로그인 요청 후에도 Set-Cookie 헤더가 없어 HttpOnly 적용 여부를 확인할 수 없습니다.",
+                    "recommendation": "로그인 URL, 인증 파라미터명(id/pw), 세션 생성 여부를 확인하세요."
+                }
+
+            if "httponly" not in set_cookie.lower():
+                return {
+                    "check_name": "HttpOnly Flag",
+                    "category": self.category_2025,
+                    "external_result": "HttpOnly Flag Missing",
+                    "internal_result": "",
+                    "status": "Vulnerable",
+                    "risk_level": "Medium",
+                    "evidence": f"로그인 후 발급된 Set-Cookie 헤더에 HttpOnly 속성이 없습니다. Set-Cookie: {set_cookie}",
+                    "recommendation": "세션 쿠키 생성 시 HttpOnly 속성을 활성화하세요. (PHP: session.cookie_httponly=1)"
+                }
+
+            return None
+
+        except requests.RequestException as e:
             return {
                 "check_name": "HttpOnly Flag",
                 "category": self.category_2025,
-                "external_result": "HttpOnly Flag Missing",
+                "external_result": "Login Request Failed",
                 "internal_result": "",
-                "status": "Vulnerable",
-                "risk_level": "Medium",
-                "evidence": "Set-Cookie 헤더에 HttpOnly 속성이 누락되어 XSS 공격 시 세션 탈취 위험이 있습니다.",
-                "recommendation": "서버 설정이나 애플리케이션 코드에서 쿠키 생성 시 HttpOnly 속성을 명시하세요."
+                "status": "Error",
+                "risk_level": "Low",
+                "evidence": f"로그인 요청 중 오류 발생: {str(e)}",
+                "recommendation": "로그인 엔드포인트 접근 가능 여부 및 URL 구성을 확인하세요."
             }
-        return None
 
         
 # 메인 실행부
