@@ -4,6 +4,8 @@
 import streamlit as st
 import os
 import sys
+import subprocess  # 👈 [추가] 백엔드 스크립트 자동 가동을 위한 모듈
+import time
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))
@@ -18,6 +20,10 @@ from components import (
     render_header_table,
     render_detail_cards,
 )
+
+# 🚀 [추가] 두 분의 백엔드 스크립트 절대 경로 정의
+DETECT_SCRIPT = os.path.join(project_root, "src", "detection", "attack-detection.py")
+FILE_CHECK_SCRIPT = os.path.join(project_root, "src", "inspection", "file_check.py")
 
 st.set_page_config(
     page_title="Header Hunter",
@@ -136,6 +142,23 @@ with col_btn:
 
 if scan_clicked:
     if url_input:
+        # 🕹️ [기능 삽입] 버튼 클릭 시 백엔드 스크립트 2개를 순서대로 가동 (입력된 url_input 전달)
+        with st.spinner("🔍 진단 스크립트 자동 실행 중..."):
+            try:
+                # 1. 내 웹 어택 탐지 파일 실행
+                st.toast("⏳ 1단계: 내 보안 진단 스크립트 실행 중...")
+                subprocess.run(["sudo", "python3", DETECT_SCRIPT, url_input], check=True)
+                
+                # 2. 동준님 점검 파일 실행
+                st.toast("⏳ 2단계: 동준님 설정 점검 스크립트 실행 중...")
+                subprocess.run(["sudo", "python3", FILE_CHECK_SCRIPT, url_input], check=True)
+                time.sleep(1)  # 간단한 지연 추가
+                
+                st.toast("✅ 스크립트 점검 완료! GPT 분석으로 진입합니다.")
+            except subprocess.CalledProcessError:
+                st.error("❌ 스크립트 자동 가동 중 오류가 발생했습니다. 경로 및 터미널 권한을 확인하세요.")
+
+        # ----------------- 여기서부터는 기존 오리지널 코드와 100% 동일 -----------------
         json_path = "output/internal_inspection_result_latest.json"
         if os.path.exists(json_path):
             with st.spinner("GPT 분석 중..."):
