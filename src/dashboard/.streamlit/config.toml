@@ -1,0 +1,13 @@
+[theme]
+# 시스템 설정 무시하고 항상 다크모드 적용
+base = "dark"
+
+# 대시보드 테마 컬러
+primaryColor = "#ef4444"
+backgroundColor = "#0d0d0d"
+secondaryBackgroundColor = "#111111"
+textColor = "#e0e0e0"
+
+[server]
+#워터마크 숨기기
+headless = true

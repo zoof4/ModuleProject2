@@ -1,3 +1,8 @@
+streamlit
+plotly
+pandas
+fpdf2
+kaleido
 annotated-types==0.7.0
 anyio==4.13.0
 certifi==2026.4.22
