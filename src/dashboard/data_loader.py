@@ -90,15 +90,17 @@ def get_summary(data: dict) -> dict:
     """헤더 목록에서 요약 통계 계산"""
     headers = data.get("headers", [])
     total = len(headers)
-    risk_count = {"High": 0, "Medium": 0, "Low": 0}
+    risk_count = {"High": 0, "Medium": 0, "Low": 0, "양호": 0}
     issue_count = 0
 
     for h in headers:
-        if h["status"] != "ok":
+        if h["status"] in ["vulnerable", "review_required", "n/a"]:
             issue_count += 1
             risk = h.get("risk", "Low")
             if risk in risk_count:
                 risk_count[risk] += 1
+        elif h["status"] == "safe":
+            risk_count["양호"] += 1
 
     return {
         "total": total,

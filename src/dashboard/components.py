@@ -37,13 +37,21 @@ def render_risk_chart(summary: dict):
     st.markdown("### 위험도 분포")
     rc = summary["risk_count"]
     df = pd.DataFrame({
-        "등급": list(rc.keys()),
-        "개수": list(rc.values())
+        "등급": [k for k, v in rc.items() if v > 0],
+        "개수": [v for v in rc.values() if v > 0]
     })
+    if df.empty:
+        st.info("진단 결과가 없습니다.")
+        return
     fig = px.pie(
         df, names="등급", values="개수", hole=0.55,
         color="등급",
-        color_discrete_map={"High": "#ef4444", "Medium": "#f97316", "Low": "#eab308"}
+        color_discrete_map={
+            "High":   "#ef4444",
+            "Medium": "#f97316",
+            "Low":    "#eab308",
+            "양호":   "#22c55e"
+        }
     )
     fig.update_layout(
         margin=dict(t=0, b=0, l=0, r=0),
