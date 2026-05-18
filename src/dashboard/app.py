@@ -167,6 +167,7 @@ if scan_clicked:
                 import json as _json
 
                 raw = run_analysis(json_path)
+                
 
                 with open(json_path, encoding="utf-8") as f:
                     scan_data = _json.load(f)
