@@ -2,7 +2,7 @@ import requests
 import json
 import os
 from datetime import datetime
-import requests
+import re
 
 class ExternalScanner:
     
@@ -53,20 +53,33 @@ class ExternalScanner:
     # 개별 진단 모듈 (내부 함수)
 
     def _check_server_banner(self, headers):
-        #진단 모듈 1: Server 헤더를 통한 서버 종류 및 버전 노출 확인
         server_banner = headers.get("Server")
-        if server_banner:
+
+        if not server_banner:
+            return None
+
+        if re.search(r"\d+\.\d+|\(.*\)|ubuntu|debian|centos|php", server_banner, re.IGNORECASE):
             return {
                 "check_name": "ServerTokens",
                 "category": self.category_2025,
                 "external_result": f"Detected: {server_banner}",
-                "internal_result": "",  # 동준님이 설정 파일 확인 후 채울 공간
+                "internal_result": "",
                 "status": "Vulnerable",
                 "risk_level": "Low",
                 "evidence": f"서버 버전 정보가 노출되고 있습니다: {server_banner}",
                 "recommendation": "Apache 설정에서 ServerTokens Prod, ServerSignature Off를 적용하여 정보를 숨기세요."
             }
-        return None
+
+        return {
+            "check_name": "ServerTokens",
+            "category": self.category_2025,
+            "external_result": f"Detected: {server_banner}",
+            "internal_result": "",
+            "status": "Safe",
+            "risk_level": "Low",
+            "evidence": f"서버 제품명만 노출되고 상세 버전 정보는 노출되지 않습니다: {server_banner}",
+            "recommendation": "현재 ServerTokens 설정은 적절합니다."
+        }
 
     def _check_x_frame_options(self, headers):
         #진단 모듈 2: 클릭재킹(Clickjacking) 공격 방어용 헤더 확인
