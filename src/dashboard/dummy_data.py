@@ -9,7 +9,7 @@ def get_dummy_data():
             {
                 "name": "Content-Security-Policy",
                 "alias": "CSP",
-                "status": "missing",
+                "status": "safe",
                 "risk": "High",
                 "description": "XSS 공격으로 사용자 브라우저에서 악성 스크립트 실행 가능",
                 "false_positive": False,
@@ -18,7 +18,7 @@ def get_dummy_data():
             {
                 "name": "Strict-Transport-Security",
                 "alias": "HSTS",
-                "status": "missing",
+                "status": "safe",
                 "risk": "High",
                 "description": "HTTP 다운그레이드 공격으로 암호화 통신 무력화 가능",
                 "false_positive": False,
@@ -27,7 +27,7 @@ def get_dummy_data():
             {
                 "name": "X-Frame-Options",
                 "alias": "XFO",
-                "status": "missing",
+                "status": "safe",
                 "risk": "Medium",
                 "description": "클릭재킹 공격으로 사용자 의도하지 않은 클릭 유도 가능",
                 "false_positive": False,
@@ -36,7 +36,7 @@ def get_dummy_data():
             {
                 "name": "Server",
                 "alias": "Server",
-                "status": "exposed",
+                "status": "vulnerable",
                 "risk": "Medium",
                 "description": "서버 버전 정보 노출로 CVE 기반 타겟 공격 가능 (현재값: Apache/2.4.51)",
                 "false_positive": False,
@@ -45,7 +45,7 @@ def get_dummy_data():
             {
                 "name": "X-Content-Type-Options",
                 "alias": "XCTO",
-                "status": "missing",
+                "status": "vulnerable",
                 "risk": "Low",
                 "description": "브라우저가 MIME 타입을 임의 추측하여 악성 파일 실행 가능",
                 "false_positive": False,
@@ -54,7 +54,7 @@ def get_dummy_data():
             {
                 "name": "X-Powered-By",
                 "alias": "X-Powered-By",
-                "status": "ok",
+                "status": "safe",
                 "risk": "Low",
                 "description": "헤더가 제거되어 있어 정상",
                 "false_positive": False,

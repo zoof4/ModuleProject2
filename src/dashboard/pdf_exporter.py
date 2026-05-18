@@ -6,8 +6,9 @@ import plotly.io as pio
 import pandas as pd
 import tempfile, os
 
-MALGUN      = "C:/Windows/Fonts/malgun.ttf"
-MALGUN_BOLD = "C:/Windows/Fonts/malgunbd.ttf"
+BASE        = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MALGUN      = os.path.join(BASE, "fonts", "NanumGothic-Regular.ttf")
+MALGUN_BOLD = os.path.join(BASE, "fonts", "NanumGothic-Bold.ttf")
 
 class PDF(FPDF):
     def __init__(self):
