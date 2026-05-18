@@ -146,11 +146,11 @@ if scan_clicked:
         with st.spinner("🔍 진단 스크립트 자동 실행 중..."):
             try:
                 # 1. 내 웹 어택 탐지 파일 실행
-                st.toast("⏳ 1단계: 내 보안 진단 스크립트 실행 중...")
+                st.toast("⏳ 1단계: 외부 보안 진단 스크립트 실행 중...")
                 subprocess.run(["python", DETECT_SCRIPT, url_input], check=True)
                 
                 # 2. 동준님 점검 파일 실행
-                st.toast("⏳ 2단계: 동준님 설정 점검 스크립트 실행 중...")
+                st.toast("⏳ 2단계: 내부 설정 점검 스크립트 실행 중...")
                 subprocess.run(["python", FILE_CHECK_SCRIPT, url_input], check=True)
                 
                 st.toast("✅ 스크립트 점검 완료! GPT 분석으로 진입합니다.")
