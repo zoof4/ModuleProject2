@@ -22,7 +22,7 @@ from components import (
 )
 
 # 🚀 [추가] 두 분의 백엔드 스크립트 절대 경로 정의
-DETECT_SCRIPT = os.path.join(project_root, "src", "detection", "attack-detection.py")
+DETECT_SCRIPT = os.path.join(project_root, "src", "detection", "attack_detection.py")
 FILE_CHECK_SCRIPT = os.path.join(project_root, "src", "inspection", "file_check.py")
 
 st.set_page_config(
