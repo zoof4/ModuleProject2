@@ -20,16 +20,20 @@ SK 루키즈 AI_31기 5조 모듈 프로젝트
 ModuleProject2/
 ├── src/
 │   ├── detection/          # 공격 탐지 스크립트
-│   │   └── attack.py
+│   │   └── attack_detection.py
 │   ├── inspection/         # 서버 내부 파일/설정 확인
 │   │   └── file_check.py
 │   ├── gpt/                # GPT API 연동 및 응답 포맷
 │   │   ├── api.py
 │   │   └── response_format.py
-│   └── dashboard/          # Streamlit 대시보드
+│   ├── dashboard/          # Streamlit 대시보드
+│   │   ├── app.py
+│   │   ├── components.py
+│   │   ├── data_loader.py
+│   │   ├── dummy_data.py
+│   │   └── pdf_exporter.py
 ├── output/                 # JSON 결과물 공유 폴더
-├── docs/
-├── test_gpt.py
+├── fonts/
 ├── requirements.txt
 └── README.md
 ```
@@ -41,9 +45,9 @@ ModuleProject2/
 ```
 [테스트 서버 localhost]
         ↓
-[attack.py + file_check.py] 스캔 후 JSON 생성
+[attack_detection.py + file_check.py] 스캔 후 JSON 생성
         ↓
-  output/scan_result.json
+  output/internal_inspection_result_latest.json
         ↓
 [api.py] JSON 읽어서 GPT 전달
         ↓
@@ -83,17 +87,17 @@ OPENAI_API_KEY=sk-여기에_실제_키_입력
 
 > `.env` 파일은 절대 GitHub에 올리지 마세요.
 
-### 4. 브랜치 이동
+### 4. 실행
 
 ```bash
-git checkout -t origin/feature/본인브랜치명
+streamlit run src/dashboard/app.py
 ```
 
 ---
 
 ## JSON 입출력 구조
 
-### 입력 (attack.py + file_check.py 가 output/ 에 저장하는 형식)
+### 입력 (attack_detection.py + file_check.py 가 output/ 에 저장하는 형식)
 
 단일 결과:
 
@@ -161,86 +165,6 @@ git checkout -t origin/feature/본인브랜치명
 
 ---
 
-## GPT 모듈 사용 방법 (대시보드 담당자용)
-
-### 사용할 함수 3개
-
-```python
-# api.py
-run_analysis(json_path, system_prompt)
-# json_path     : output/ 폴더에 저장된 JSON 파일 경로
-# system_prompt : get_system_prompt() 반환값 넣으면 됨
-
-# response_format.py
-get_system_prompt()
-# 프롬프트 반환, run_analysis()에 그대로 넘기면 됨
-
-format_gpt_response(raw, target_url)
-# run_analysis() 결과를 대시보드용으로 정제
-# target_url : 진단한 서버 URL
-```
-
-### 호출 순서
-
-```python
-from src.gpt.api import run_analysis
-from src.gpt.response_format import get_system_prompt, format_gpt_response
-
-prompt = get_system_prompt()
-raw = run_analysis("output/scan_result.json", prompt)
-result = format_gpt_response(raw, target_url="http://진단서버URL")
-```
-
-### result에서 꺼내 쓸 수 있는 값
-
-```python
-result["risk_level"]                        # "High" / "Medium" / "Low"
-result["summary"]                           # 전체 요약 문자열
-result["false_positive"]                    # True / False
-result["false_positive_reason"]             # 오탐 근거 (오탐 아니면 null)
-result["recommendation_count"]              # 권고사항 개수
-result["recommendations"][0]["check_name"]  # 진단 항목명
-result["recommendations"][0]["issue"]       # 문제 설명
-result["recommendations"][0]["remediation"] # 재설정 명령어
-```
-
-### Streamlit 예시
-
-```python
-import streamlit as st
-
-st.metric("위험도", result["risk_level"])
-st.write(result["summary"])
-
-for rec in result["recommendations"]:
-    st.subheader(rec["check_name"])
-    st.write(f"문제: {rec['issue']}")
-    st.code(rec["remediation"])
-```
-
----
-
-## 브랜치 전략
-
-```
-main        ← 최종 완성본만 병합
-  └── dev   ← 통합 테스트 브랜치 (PR 대상)
-        ├── feature/attack-detection
-        ├── feature/file-inspection
-        ├── feature/gpt-api
-        ├── feature/gpt-response
-        └── feature/dashboard
-```
-
-### 작업 흐름
-
-1. 본인 feature 브랜치에서 작업
-2. 작업 완료 후 dev 브랜치로 PR 요청
-3. 팀원 확인 후 dev에 merge
-4. 최종 검증 완료 후 main으로 merge
-
----
-
 ## 기술 스택
 
 | 구분      | 기술                 |
@@ -250,12 +174,3 @@ main        ← 최종 완성본만 병합
 | AI 분석   | OpenAI GPT-4o-mini   |
 | 시각화    | Streamlit            |
 | 버전 관리 | GitHub               |
-
----
-
-## 주의사항
-
-- `.env` 파일은 절대 커밋하지 마세요. (API Key 유출 위험)
-- `output/` 폴더의 JSON 파일은 개인 테스트용으로만 사용하세요.
-- 작업은 반드시 본인 feature 브랜치에서만 진행하세요.
-- PR 전 반드시 본인 코드 테스트를 완료하세요.
