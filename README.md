@@ -71,12 +71,21 @@ cd ModuleProject2
 
 ### 2. 가상환경 세팅
 
-```bash
+``` for Windows
 python -m venv .venv
 source .venv/Scripts/activate  # Windows Git Bash
 pip install -r requirements.txt
 ```
 
+``` for linux
+nano ~/.bashrc # 편집기로 ~/.bashrc 실행 후 가장 아래쪽에 내용 추가
+alias python='python3'
+alias pip='pip3'
+
+python -m venv .venv
+source .venv/bin/activate # linux
+pip install -r requirements.txt
+```
 ### 3. .env 파일 생성
 
 루트에 `.env` 파일을 생성하고 아래 내용을 입력합니다.
