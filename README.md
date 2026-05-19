@@ -71,13 +71,15 @@ cd ModuleProject2
 
 ### 2. 가상환경 세팅
 
-``` for Windows
+``` 
+# for Windows
 python -m venv .venv
 source .venv/Scripts/activate  # Windows Git Bash
 pip install -r requirements.txt
 ```
 
-``` for linux
+``` 
+# for linux
 nano ~/.bashrc # 편집기로 ~/.bashrc 실행 후 가장 아래쪽에 내용 추가
 alias python='python3'
 alias pip='pip3'
