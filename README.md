@@ -79,7 +79,7 @@ pip install -r requirements.txt
 
 ### 3. .env 파일 생성
 
-루트에 `.env` 파일을 생성하고 아래 내용을 입력합니다. (API Key는 팀장에게 요청)
+루트에 `.env` 파일을 생성하고 아래 내용을 입력합니다.
 
 ```
 OPENAI_API_KEY=sk-여기에_실제_키_입력
